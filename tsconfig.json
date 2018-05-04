@@ -1,0 +1,13 @@
+{
+    "include": [
+        "src/**/*.ts"
+    ],
+    "compilerOptions": {
+        "target": "es5",
+        "strictNullChecks": true,
+        "noUnusedLocals": true,
+        "lib": [
+            "es6"
+        ]
+    }
+}

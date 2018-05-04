@@ -1,0 +1,20 @@
+{
+  "name": "yarn-dedupe",
+  "version": "0.1.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "prepublish": "tsc -p tsconfig.json --outDir ."
+  },
+  "bin": "./bin/yarn-dedupe.js",
+  "dependencies": {
+    "@yarnpkg/lockfile": "^1.0.0",
+    "semver": "^5.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^10.0.3",
+    "@types/semver": "^5.5.0",
+    "@types/yargs": "^11.0.0",
+    "typescript": "^2.8.3"
+  }
+}
