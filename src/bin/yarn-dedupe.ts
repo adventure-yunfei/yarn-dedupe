@@ -18,24 +18,27 @@ function writeLockFile(filepath: string, content: yarnlock.LockFile.Content) {
 }
 
 const argv = yargs
-    .usage('[options] <yarnlock_file>')
+    .usage('[options] [dir]')
     .example('$0 yarn.lock', 'Dedupe all packages')
     .example('$0 yarn.lock --packages react react-dom', 'Dedupe only "react" and "react-dom" packages')
     .option('packages', { alias: 'p', desc: 'Target package names to dedupe', type: 'array' })
     .option('check-only', { alias: 'c', desc: 'Only check duplicates (exit with 1 if has duplicates)', type: 'boolean' })
     .argv;
 
-if (argv._.length !== 1) {
+if (argv._.length > 1) {
     yargs.showHelp();
 } else {
-    const yarnlockFile = path.resolve(process.cwd(), argv._[0]);
+    const targetDir = path.resolve(process.cwd(), argv._[0] || '.');
+    const yarnlockFile = path.resolve(targetDir, 'yarn.lock');
     const lockfileContent = readLockFile(yarnlockFile);
 
     if (lockfileContent.type === 'success') {
         const argPackages = argv.packages as string[];
         const filterPackages = argPackages && argPackages.length ? argPackages : undefined;
 
-        const dedupeResult = dedupe(lockfileContent, filterPackages);
+        const dedupeResult = dedupe(lockfileContent, {
+            targetPackages: filterPackages
+        });
 
         if (dedupeResult.resolved.length || dedupeResult.unresolved.length) {
             if (argv['check-only']) {

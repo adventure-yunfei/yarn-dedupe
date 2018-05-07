@@ -72,14 +72,16 @@ function findDedupeVersion(packageSemverMap: PackageSemverMap) {
         .find(item => isVersionSatisfied(item.version, packageSemverMap));
 }
 
-export function dedupe(lockData: LockFile.Content, targetPackages?: Array<string|RegExp>): { lockData: LockFile.Content; resolved: string[]; unresolved: string[]; } {
+export function dedupe(lockData: LockFile.Content, options: {
+    targetPackages?: Array<string|RegExp>;
+} = {}): { lockData: LockFile.Content; resolved: string[]; unresolved: string[]; } {
     const packageMap = parsePackageMap(lockData);
     const dedupeResults = {
         resolved: [] as string[],
         unresolved: [] as string[]
     };
     const shouldDedupeFor = (packageName: string) => {
-        return !targetPackages || targetPackages.some(pkgFilter => {
+        return !options.targetPackages || options.targetPackages.some(pkgFilter => {
             return typeof pkgFilter === 'string' ? pkgFilter === packageName : pkgFilter.test(packageName);
         })
     };
