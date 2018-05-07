@@ -4,64 +4,56 @@ import * as fs from 'fs';
 import * as process from 'process';
 import * as path from 'path';
 import * as yarnlock from '@yarnpkg/lockfile';
-import { parsePackageMap, isDuplicate, findDedupeVersion, serializePackageMap } from '../scripts/utils';
+import { dedupe } from '..';
+import * as yargs from 'yargs';
 
-function dedupe(lockData: yarnlock.LockFile.Content): { lockData: yarnlock.LockFile.Content; resolved: string[]; unresolved: string[]; } {
-    const packageMap = parsePackageMap(lockData);
-    const dedupeResults = {
-        resolved: [] as string[],
-        unresolved: [] as string[]
-    };
-
-    packageMap.forEach((pkgSemverMap, packageName) => {
-        if (isDuplicate(pkgSemverMap)) {
-            const dedupeTarget = findDedupeVersion(pkgSemverMap);
-            if (dedupeTarget) {
-                for (let semverStr of Array.from(pkgSemverMap.keys())) {
-                    pkgSemverMap.set(semverStr, dedupeTarget);
-                }
-                dedupeResults.resolved.push(packageName);
-            } else {
-                dedupeResults.unresolved.push(packageName);
-            }
-        }
-    });
-
-    return {
-        lockData: serializePackageMap(packageMap),
-        resolved: dedupeResults.resolved,
-        unresolved: dedupeResults.unresolved
-    };
+function readLockFile(filepath: string) {
+    console.log('# read yarn.lock...');
+    return yarnlock.parse(fs.readFileSync(filepath, 'utf8').replace(/\r\n/g, '\n'));
 }
 
-var lockfilePath = process.argv.slice(2)[0];
-var cwd = process.cwd();
-
-if (!lockfilePath) {
-    console.error(`yarn.lock file is not provided.\nUsage: yarn-dedupe yarn.lock`);
-    process.exit(1);
+function writeLockFile(filepath: string, content: yarnlock.LockFile.Content) {
+    console.log('# write yarn.lock...');
+    fs.writeFileSync(filepath, yarnlock.stringify(content.object), 'utf8');
 }
 
-lockfilePath = path.resolve(cwd, lockfilePath);
+const argv = yargs
+    .usage('[options] <yarnlock_file>')
+    .example('$0 yarn.lock', 'Dedupe all packages')
+    .example('$0 yarn.lock --packages react react-dom', 'Dedupe only "react" and "react-dom" packages')
+    .option('packages', { alias: 'p', desc: 'Target package names to dedupe', type: 'array' })
+    .option('check-only', { alias: 'c', desc: 'Only check duplicates (exit with 1 if has duplicates)', type: 'boolean' })
+    .argv;
 
-console.log('# read yarn.lock...');
-var lockfile = yarnlock.parse(fs.readFileSync(lockfilePath, 'utf8').replace(/\r\n/g, '\n'));
-
-if (lockfile.type === 'success') {
-    const result = dedupe(lockfile);
-    if (result.resolved.length || result.unresolved.length) {
-        console.log('# Dedupe result:')
-        if (result.resolved.length) {
-            console.log(` - Resolved: ${result.resolved.join(', ')}`);
-        }
-        if (result.unresolved.length) {
-            console.warn(` - Unresolved: ${result.unresolved.join(', ')}`);
-        }
-        fs.writeFileSync(lockfilePath, yarnlock.stringify(result.lockData.object), 'utf8');
-    } else {
-        console.log('# No duplicate.');
-    }
+if (argv._.length !== 1) {
+    yargs.showHelp();
 } else {
-    console.error(`yarn.lock parse failed, type: ${lockfile && lockfile.type}`);
-    process.exit(1);
+    const yarnlockFile = path.resolve(process.cwd(), argv._[0]);
+    const lockfileContent = readLockFile(yarnlockFile);
+
+    if (lockfileContent.type === 'success') {
+        const argPackages = argv.packages as string[];
+        const filterPackages = argPackages && argPackages.length ? argPackages : undefined;
+
+        const dedupeResult = dedupe(lockfileContent, filterPackages);
+
+        if (dedupeResult.resolved.length || dedupeResult.unresolved.length) {
+            if (argv['check-only']) {
+                console.error('# Has duplicates.');
+                dedupeResult.resolved.length && console.error(` - Resolvable: ${dedupeResult.resolved.join(', ')}`);
+                dedupeResult.unresolved.length && console.error(` - Unresolvable: ${dedupeResult.unresolved.join(', ')}`);
+                process.exit(1);
+            } else {
+                console.log('# Dedupe result:');
+                dedupeResult.resolved.length && console.log(` - Resolved: ${dedupeResult.resolved.join(', ')}`);
+                dedupeResult.unresolved.length && console.error(` - Unresolved: ${dedupeResult.unresolved.join(', ')}`);
+                writeLockFile(yarnlockFile, dedupeResult.lockData);
+            }
+        } else {
+            console.log('# No duplicate.');
+        }
+    } else {
+        console.error(`yarn.lock parse failed, type: ${lockfileContent && lockfileContent.type}`);
+        process.exit(1);
+    }
 }

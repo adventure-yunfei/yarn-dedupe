@@ -3,3 +3,4 @@ node_modules/
 /bin/
 /scripts/
 npm-debug.log
+/**/*.js
