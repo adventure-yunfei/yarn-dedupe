@@ -40,16 +40,18 @@ if (argv._.length > 1) {
             targetPackages: filterPackages
         });
 
-        if (dedupeResult.resolved.length || dedupeResult.unresolved.length) {
+        if (dedupeResult.resolved.length || dedupeResult.partialResolved.length || dedupeResult.unresolved.length) {
             if (argv['check-only']) {
-                console.error('# Has duplicates.');
-                dedupeResult.resolved.length && console.error(` - Resolvable: ${dedupeResult.resolved.join(', ')}`);
-                dedupeResult.unresolved.length && console.error(` - Unresolvable: ${dedupeResult.unresolved.join(', ')}`);
+                console.log('# Has duplicates.');
+                dedupeResult.resolved.length && console.log(` - Resolvable: ${dedupeResult.resolved.join(', ')}`);
+                dedupeResult.partialResolved.length && console.log(` - Partial Resolvable: ${dedupeResult.partialResolved.join(', ')}`);
+                dedupeResult.unresolved.length && console.log(` - Unresolvable: ${dedupeResult.unresolved.join(', ')}`);
                 process.exit(1);
             } else {
                 console.log('# Dedupe result:');
                 dedupeResult.resolved.length && console.log(` - Resolved: ${dedupeResult.resolved.join(', ')}`);
-                dedupeResult.unresolved.length && console.error(` - Unresolved: ${dedupeResult.unresolved.join(', ')}`);
+                dedupeResult.partialResolved.length && console.log(` - Partial Resolved: ${dedupeResult.partialResolved.join(', ')}`);
+                dedupeResult.unresolved.length && console.log(` - Unresolved: ${dedupeResult.unresolved.join(', ')}`);
                 writeLockFile(yarnlockFile, dedupeResult.lockData);
             }
         } else {
