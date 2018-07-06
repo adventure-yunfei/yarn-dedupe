@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "prepublish": "npm run build -s",
+    "prepublish": "npm run build -s && npm test",
     "test": "npm run build -s && mocha -r ts-node/register tests/**/*.test.ts",
     "build": "npm run clean -s && tsc -p tsconfig.json --outDir .",
     "clean": "trash '**/*.js' '!node_modules/**/*'"
