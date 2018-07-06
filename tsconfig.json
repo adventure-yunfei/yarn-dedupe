@@ -8,6 +8,9 @@
         "noUnusedLocals": true,
         "lib": [
             "es6"
+        ],
+        "types": [
+            "node"
         ]
     }
 }
