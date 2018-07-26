@@ -18,7 +18,7 @@ function writeLockFile(filepath: string, content: yarnlock.LockFile.Content) {
 }
 
 const argv = yargs
-    .usage('[options] [dir]')
+    .usage('[options] [yarn.lock-file]')
     .example('$0 yarn.lock', 'Dedupe all packages')
     .example('$0 yarn.lock --packages react react-dom', 'Dedupe only "react" and "react-dom" packages')
     .option('packages', { alias: 'p', desc: 'Target package names to dedupe', type: 'array' })
@@ -28,8 +28,7 @@ const argv = yargs
 if (argv._.length > 1) {
     yargs.showHelp();
 } else {
-    const targetDir = path.resolve(process.cwd(), argv._[0] || '.');
-    const yarnlockFile = path.resolve(targetDir, 'yarn.lock');
+    const yarnlockFile = path.resolve(process.cwd(), argv._[0] || 'yarn.lock');
     const lockfileContent = readLockFile(yarnlockFile);
 
     if (lockfileContent.type === 'success') {
