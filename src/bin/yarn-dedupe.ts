@@ -21,7 +21,7 @@ const argv = yargs
     .usage('[options] [yarn.lock-file]')
     .example('$0 yarn.lock', 'Dedupe all packages')
     .example('$0 yarn.lock --packages react react-dom', 'Dedupe only "react" and "react-dom" packages')
-    .option('packages', { alias: 'p', desc: 'Target package names to dedupe', type: 'array' })
+    .option('packages', { alias: 'p', desc: 'RegExpsfor target package names to dedupe', type: 'array' })
     .option('check-only', { alias: 'c', desc: 'Only check duplicates (exit with 1 if has duplicates)', type: 'boolean' })
     .argv;
 
@@ -36,7 +36,7 @@ if (argv._.length > 1) {
         const filterPackages = argPackages && argPackages.length ? argPackages : undefined;
 
         const dedupeResult = dedupe(lockfileContent, {
-            targetPackages: filterPackages
+            targetPackages: filterPackages && filterPackages.map(regExpStr => new RegExp(regExpStr) && new RegExp(`^${regExpStr}$`))
         });
 
         if (dedupeResult.resolved.length || dedupeResult.partialResolved.length || dedupeResult.unresolved.length) {

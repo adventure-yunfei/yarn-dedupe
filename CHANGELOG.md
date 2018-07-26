@@ -1,4 +1,4 @@
-# 0.2.0
+# 0.2.1
 
 - Add cli options:
     - `--packages <...package-filter>` to filter dedupe targets
