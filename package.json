@@ -1,12 +1,12 @@
 {
   "name": "yarn-dedupe",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
     "prepublish": "npm run build -s && npm test",
     "test": "npm run build -s && mocha -r ts-node/register tests/**/*.test.ts",
-    "build": "npm run clean -s && tsc -p tsconfig.json --outDir .",
+    "build": "npm run clean -s && tsc -p tsconfig.json --newLine lf --outDir .",
     "clean": "trash '**/*.js' '!node_modules/**/*'"
   },
   "bin": "./bin/yarn-dedupe.js",

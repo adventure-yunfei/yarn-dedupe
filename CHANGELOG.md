@@ -1,3 +1,7 @@
+# 0.2.2
+
+- Fix bin by compile output with "lf" line-endings
+
 # 0.2.1
 
 - Add cli options:
