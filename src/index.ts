@@ -28,7 +28,7 @@ function parseDependency(dependencyStr: string) {
     };
 }
 
-export function parsePackageMap(lockData: LockFile.Content): PackageMap {
+function parsePackageMap(lockData: LockFile.Content): PackageMap {
     const packageMap: PackageMap = new Map();
     const dependencies = lockData.object;
     Object.keys(dependencies).forEach(expectedDependency => {
@@ -42,7 +42,7 @@ export function parsePackageMap(lockData: LockFile.Content): PackageMap {
     return packageMap;
 }
 
-export function serializePackageMap(packageMap: PackageMap): LockFile.Content {
+function serializePackageMap(packageMap: PackageMap): LockFile.Content {
     const objects: LockFile.Content['object'] = {};
 
     packageMap.forEach((semverMap, name) => {
