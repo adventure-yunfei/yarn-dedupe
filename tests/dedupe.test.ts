@@ -30,6 +30,10 @@ describe('Test dedupe', () => {
         testDedupeExecute(path.resolve(__dirname, './resources/should.dedupe'));
     });
 
+    it('should dedupe with newer version', () => {
+        testDedupeExecute(path.resolve(__dirname, './resources/should.dedupe.with.newer.version'));
+    });
+
     it('should fail', () => {
         testDedupeExecute(path.resolve(__dirname, './resources/should.fail'));
     });

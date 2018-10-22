@@ -61,29 +61,29 @@ function isDuplicate(packageSemverMap: PackageSemverMap) {
     return !isAllSame(Array.from(packageSemverMap.values()).map(item => item.version));
 }
 
-function popMax<T>(items: T[], getItemWeight: (item: T) => number): T|undefined {
-    let maxItem: { item: T; index: number; weight: number; } | undefined;
-    items.forEach((item, index) => {
-        const weight = getItemWeight(item);
-        if (!maxItem || weight > maxItem.weight) {
-            maxItem = { item, index,  weight, };
+type AvailableDedupeResults = Array<{ ranges: Set<string>; target: LockFile.LockTarget; }>;
+
+function findBestDedupeResultIndex(dedupeResults: AvailableDedupeResults): number {
+    let maxItemInfo: { item: AvailableDedupeResults[0]; index: number; } | undefined;
+    const isBetterThan = (item: AvailableDedupeResults[0], targetItem: AvailableDedupeResults[0]) => {
+        if (item.ranges.size > targetItem.ranges.size) {
+            return true;
+        } else if (item.ranges.size === targetItem.ranges.size) {
+            return semver.gt(item.target.version, targetItem.target.version);
+        }
+        return false;
+    };
+    dedupeResults.forEach((item, index) => {
+        if (!maxItemInfo || isBetterThan(item, maxItemInfo.item)) {
+            maxItemInfo = { item, index };
         }
     });
-    if (maxItem) {
-        items.splice(maxItem.index, 1);
-        return maxItem.item;
-    }
-    return undefined;
+    return maxItemInfo ? maxItemInfo.index : -1;
 }
 
 function findDedupeVersions(packageSemverMap: PackageSemverMap) {
     interface DedupeSource { target: LockFile.LockTarget; satisfiedRanges: Set<string>; }
     const dedupeVersions = new Map<string/*target version*/, DedupeSource>();
-    packageSemverMap.forEach((lockTarget, range) => {
-        const version = lockTarget.version;
-        const dedupeSource: DedupeSource = dedupeVersions.get(version) || { target: lockTarget, satisfiedRanges: new Set() };
-        dedupeSource.satisfiedRanges.add(range);
-    });
     packageSemverMap.forEach(lockTarget => {
         const version = lockTarget.version;
         const dedupeSource: DedupeSource = dedupeVersions.get(version) || { target: lockTarget, satisfiedRanges: new Set() };
@@ -96,19 +96,21 @@ function findDedupeVersions(packageSemverMap: PackageSemverMap) {
         });
     });
 
-    let dedupeResults: Array<{ ranges: Set<string>; target: LockFile.LockTarget; }> = [];
-    dedupeVersions.forEach(dedupeSource => dedupeResults.push({ ranges: dedupeSource.satisfiedRanges, target: dedupeSource.target, }));
-    const sortedDedupeResults: typeof dedupeResults = [];
+    let availableDedupeResults: AvailableDedupeResults = [];
+    dedupeVersions.forEach(dedupeSource => availableDedupeResults.push({ ranges: dedupeSource.satisfiedRanges, target: dedupeSource.target, }));
+    const sortedDedupeResults: typeof availableDedupeResults = [];
 
-    let mostSatisfiedResult: typeof dedupeResults[0] | undefined;
-    while (mostSatisfiedResult = popMax(dedupeResults, item => item.ranges.size)) {
-        sortedDedupeResults.push(mostSatisfiedResult);
-        const ranges = mostSatisfiedResult.ranges;
-        dedupeResults.forEach(item => {
-            ranges.forEach(r => item.ranges.delete(r));
-        });
-        dedupeResults = dedupeResults.filter(item => {
-            ranges.forEach(r => item.ranges.delete(r));
+    while (availableDedupeResults.length) {
+        const bestDedupeResultIndex = findBestDedupeResultIndex(availableDedupeResults);
+        if (bestDedupeResultIndex < 0) {
+            break;
+        }
+        const bestDedupeResult = availableDedupeResults[bestDedupeResultIndex];
+        availableDedupeResults.splice(bestDedupeResultIndex, 1);
+        sortedDedupeResults.push(bestDedupeResult);
+        const handledRanges = bestDedupeResult.ranges;
+        availableDedupeResults = availableDedupeResults.filter(item => {
+            handledRanges.forEach(r => item.ranges.delete(r));
             return item.ranges.size > 1;
         });
     }

@@ -1,3 +1,7 @@
+# 0.2.3
+
+- Dedupe to newer version if multiple versions are available
+
 # 0.2.2
 
 - Fix bin by compile output with "lf" line-endings
